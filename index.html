@@ -1,0 +1,418 @@
+mindflow_ultimate/
+│
+├─ lib/
+│   ├─ main.dart
+│   ├─ screens/
+│   │   ├─ home_screen.dart
+│   │   ├─ daily_challenges.dart
+│   │   ├─ leaderboard.dart
+│   │   └─ settings.dart
+│   ├─ widgets/
+│   │   ├─ animated_shape.dart
+│   │   ├─ gradient_background.dart
+│   │   └─ points_display.dart
+│   ├─ models/
+│   │   ├─ challenge.dart
+│   │   └─ user_data.dart
+│   ├─ services/
+│   │   ├─ firebase_service.dart
+│   │   └─ notification_service.dart
+│   └─ utils/
+│       ├─ color_utils.dart
+│       ├─ animation_utils.dart
+│       └─ date_utils.dart
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(MindFlowUltimate());
+}
+
+class MindFlowUltimate extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'MindFlow Ultimate',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.cyan,
+      ),
+      home: HomeScreen(),
+    );import 'package:flutter/material.dart';
+import '../widgets/animated_shape.dart';
+import '../widgets/points_display.dart';
+import '../utils/color_utils.dart';
+import 'daily_challenges.dart';
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  List<Color> shapes = [];
+  int points = 0;
+  int level = 1;
+
+  void generateShape() {
+    setState(() {
+      shapes.add(ColorUtils.randomColor());
+      points += 10;
+      if (points % 100 == 0) level++;
+    });
+  }
+
+  void resetShapes() {
+    setState(() {
+      shapes.clear();
+      points = 0;
+      level = 1;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          GradientBackground(level: level),
+          SafeArea(
+            child: Column(
+              children: [
+                SizedBox(height: 15),
+                PointsDisplay(points: points, level: level),
+                SizedBox(height: 10),
+                Expanded(
+                  child: GridView.builder(
+                    padding: EdgeInsets.all(12),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: shapes.length,
+                    itemBuilder: (context, index) {
+                      return AnimatedShape(color: shapes[index]);
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: generateShape,
+                      icon: Icon(Icons.play_arrow),
+                      label: Text('ابدأ نشاط اليوم'),
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 15, horizontal: 20)),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DailyChallenges()),
+                        );
+                      },
+                      icon: Icon(Icons.star),
+                      label: Text('التحديات اليومية'),
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 15, horizontal: 20)),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: resetShapes,
+                      icon: Icon(Icons.refresh),
+                      label: Text('إعادة ضبط'),
+                      style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 15, horizontal: 20)),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 15),
+              ],
+            ),
+          ),
+        ],import 'package:flutter/material.dart';
+import 'dart:math';
+
+class AnimatedShape extends StatefulWidget {
+  final Color color;
+  AnimatedShape({required this.color});
+
+  @override
+  _AnimatedShapeState createState() => _AnimatedShapeState();
+}
+
+class _AnimatedShapeState extends State<AnimatedShape>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late double borderRadius;
+  Random random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    borderRadius = random.nextInt(30).toDouble();
+    _controller =
+        AnimationController(vsync: this, duration: Duration(seconds: 2));
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: 0.9 + 0.2 * _controller.value,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [widget.color.withOpacity(0.6), widget.color],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withOpacity(0.6),
+                  blurRadius: 8,
+                  offset: Offset(3, 3),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}      import 'package:flutter/material.dart';
+
+class GradientBackground extends StatelessWidget {
+  final int level;
+  GradientBackground({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    List<Color> colors;
+    if (level < 5) {
+      colors = [Colors.deepPurple.shade800, Colors.blueGrey.shade900];
+    } else if (level < 10) {
+      colors = [Colors.indigo.shade700, Colors.teal.shade800];
+    } else {
+      colors = [Colors.orange.shade700, Colors.pink.shade900];
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),import 'package:flutter/material.dart';
+
+class GradientBackground extends StatelessWidget {
+  final int level;
+  GradientBackground({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    List<Color> colors;
+    if (level < 5) {
+      colors = [Colors.deepPurple.shade800, Colors.blueGrey.shade900];
+    } else if (level < 10) {
+      colors = [Colors.indigo.shade700, Colors.teal.shade800];
+    } else {
+      colors = [Colors.orange.shade700, Colors.pink.shade900];
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),import 'package:flutter/material.dart';
+
+class PointsDisplay extends StatelessWidget {
+  final int points;
+  final int level;
+
+  PointsDisplay({required this.points, required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'MindFlow Ultimate',
+          style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.cyanAccent,
+              shadows: [
+                Shadow(blurRadius: 8, color: Colors.black45, offset: Offset(2, 2))
+              ]),
+        ),
+        SizedBox(height: 5),
+        Text(
+          'النقاط: $points   المستوى: $level',
+          style: TextStyle(fontSize: 18, color: Colors.white70),
+        ),
+      ],
+    );import 'dart:math';
+import 'package:flutter/material.dart';
+
+class ColorUtils {
+  static Random random = Random();
+
+  static Color randomColor() {
+    return Color.fromARGB(
+      255,
+      random.nextInt(256),
+      random.nextInt(256),
+      random.nextInt(256),
+    );
+  }
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.18.0
+      flutter pub get
+      {
+  "app_title": "MindFlow Ultimate",
+  "points": "Points",
+  "level": "Level",
+  "start_activity": "Start Today's Activity",
+  "daily_challenges": "Daily Challenges",
+  "reset": "Reset"
+{
+  "app_title": "مايند فلو Ultimate",
+  "points": "النقاط",
+  "level": "المستوى",
+  "start_activity": "ابدأ نشاط اليوم",
+  "daily_challenges": "التحديات اليومية",
+  "reset": "إعادة ضبط"
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'screens/home_screen.dart';
+import 'l10n/app_localizations.dart';
+
+void main() {
+  runApp(MindFlowUltimate());
+}
+
+class MindFlowUltimate extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'MindFlow Ultimate',
+      supportedLocales: [
+        Locale('en', ''),
+        Locale('ar', ''),
+      ],
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale?.languageCode) {
+            return supportedLocale;
+          }
+        }
+        return supportedLocales.first;
+      },
+      home: HomeScreen(),
+    );
+  }
+}import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class AppLocalizations {
+  final Locale locale;
+  late Map<String, String> _localizedStrings;
+
+  AppLocalizations(this.locale);
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  Future<bool> load() async {
+    String jsonString =
+        await rootBundle.loadString('lib/l10n/${locale.languageCode}.json');
+    Map<String, dynamic> jsonMap = json.decode(jsonString);
+
+    _localizedStrings =
+        jsonMap.map((key, value) => MapEntry(key, value.toString()));
+    return true;
+  }
+
+  String translate(String key) {
+    return _localizedStrings[key] ?? key;
+  }
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) {
+    return ['en', 'ar'].contains(locale.languageCode);
+  }
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async {
+    AppLocalizations localizations = AppLocalizations(locale);
+    await localizations.load();
+    return localizations;
+  }
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}import '../l10n/app_localizations.dart';
+
+Text(
+  AppLocalizations.of(context)!.translate('points') + ": $points",
+  style: TextStyle(fontSize: 18, color: Colors.white70),
+),ElevatedButton.icon(
+  onPressed: generateShape,
+  icon: Icon(Icons.play_arrow),
+  label: Text(AppLocalizations.of(context)!.translate('start_activity')),
+),
+    DropdownButton<Locale>(
+  value: selectedLocale,
+  items: [
+    DropdownMenuItem(child: Text('English'), value: Locale('en')),
+    DropdownMenuItem(child: Text('العربية'), value: Locale('ar')),
+  ],
+  onChanged: (locale) {
+    setState(() {
+      selectedLocale = locale!;
+      // تحديث التطبيق باللغات الجديدة
+      MyApp.setLocale(context, locale);
+    });
+  },
+)
